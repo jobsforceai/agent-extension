@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#plasmo-shadow-container {
+  all: initial;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Modern Scrollbar Styling for Chrome, Safari and Opera */
+body::-webkit-scrollbar {
+  width: 6px; /* Width of the scrollbar */
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Color of the track */
+}
+
+body::-webkit-scrollbar-thumb {
+  background: #888; /* Color of the scrollbar handle */
+  border-radius: 4px; /* Rounded corners */
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Color of the scrollbar handle on hover */
+}
+
+/* For IE, Edge and Firefox (Simplified) */
+body {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #888 #f1f1f1; /* Firefox: handle and track color */
+}
+
+.tour-mask {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10001 !important;
+}
+
+[data-tour] {
+  position: relative !important;
+}
+
+/* Hide scrollbar in WebKit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar in Firefox */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+
+
+/* One animation that handles drift + flicker together */
+@keyframes jf-float {
+  0% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0.2px);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate(
+      calc(-50% + var(--dx, 0px)),
+      calc(-50% + var(--dy, 0px))
+    ) scale(1.12);
+    filter: blur(0.1px);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0.2px);
+  }
+}
+
+

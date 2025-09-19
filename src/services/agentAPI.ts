@@ -72,5 +72,59 @@ export const agentAPI = {
           `Failed to create job (status: ${err?.response?.status ?? "?"}).`
       )
     }
-  }
+  },
+
+  async checkH1bSponsorship(companyName: string): Promise<any> {
+    const token = await getAuthToken();
+    const url = `${WEBAPP_URL}/api/v1/agent/check-h1b`;
+    try {
+      const res = await axios.post(
+        url,
+        { companyName },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return res.data;
+    } catch (err: any) {
+      throw new Error(
+        err?.response?.data?.message ||
+          `Failed to check H1B sponsorship (status: ${
+            err?.response?.status ?? "?"
+          }).`
+      );
+    }
+  },
+
+  async computeJobScore(jobDetails: string): Promise<any> {
+    const token = await getAuthToken();
+    const url = `${WEBAPP_URL}/api/v1/agent/compute-score`;
+    try {
+      const res = await axios.post(
+        url,
+        { jobDetails },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return res.data;
+    } catch (err: any) {
+      throw new Error(
+        err?.response?.data?.message ||
+          `Failed to compute job score (status: ${
+            err?.response?.status ?? "?"
+          }).`
+      );
+    }
+  },
+
+
 }

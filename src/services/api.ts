@@ -1,34 +1,28 @@
-import axios, { type AxiosResponse } from "axios"
+import axios, { type AxiosResponse } from "axios";
+import type { UserData, UserDetails, Resume, UniversalResume } from "~data/types";
 
-import type {
-  Resume,
-  UniversalResume,
-  UserData,
-  UserDetails
-} from "~data/types"
+const WEBAPP_URL = process.env.PLASMO_PUBLIC_WEBAPP_URL;
 
-const WEBAPP_URL = process.env.PLASMO_PUBLIC_WEBAPP_URL
-
-export const profileAPI = {
-  async getProfile(): Promise<UserData | null> {
+export const agentAPI = {
+  // Add agent-specific API calls here
+  // Example:
+  async getProfile(): Promise<UserData | null> { // <--- Added getProfile function
     try {
-      const result = await chrome.storage.local.get(["authToken"])
-      const token = result.authToken
-      console.log("Fetching profile with token:", token)
+      const token = await chrome.storage.local.get(["authToken"]);
       const userResponse: AxiosResponse = await axios.get(
-        `${WEBAPP_URL}/api/v1/user/details`,
+        `${WEBAPP_URL}/api/v1/user/details`, // <--- Replace with your actual endpoint
         {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token.authToken}`, // <--- Make sure you have the correct token
+          },
         }
-      )
-      const userDetails: UserDetails = userResponse.data.data
+      );
+      const userDetails: UserDetails = userResponse.data.data;
       const resumeResponse: AxiosResponse = await axios.get(
         `${WEBAPP_URL}/api/v1/resume/actions/list-all-resumes`,
         {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token.authToken}`
           }
         }
       )
@@ -40,14 +34,14 @@ export const profileAPI = {
           `${WEBAPP_URL}/api/v1/resume/actions/universal`,
           {
             headers: {
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${token.authToken}`
             }
           }
         )
         if (universalResumeResponse.data.data) {
           universalResumes = universalResumeResponse.data.data
         }
-      } catch (error) {
+      } catch (error) {       
         if (axios.isAxiosError(error) && error.response?.status === 404) {
           console.log(
             "No universal resumes found for this user (404). This is normal for users without universal"
@@ -77,36 +71,10 @@ export const profileAPI = {
         userDetails,
         resume: enrichedResumes
       }
-      return finalUserProfileData
-    } catch (error) {
-      console.error("Error fetching profile:", error)
-      return null
+      return finalUserProfileData;
+    } catch (error: any) {
+      console.error("Error fetching profile:", error);
+      return null;
     }
   },
-
-  async getAssignedUsers(): Promise<{
-    success: boolean
-    message: string
-    data: { userId: string; name: string }[]
-  }> {
-    try {
-      const result = await chrome.storage.local.get(["authToken"])
-      const token = result.authToken
-
-      const response: AxiosResponse<{
-        success: boolean
-        message: string
-        data: { userId: string; name: string }[]
-      }> = await axios.get(`${WEBAPP_URL}/api/v1/agent/assigned-users-list`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      return response.data
-    } catch (error) {
-      console.error("Error fetching assigned users:", error)
-      throw error 
-    }
-  }
-}
-
+};

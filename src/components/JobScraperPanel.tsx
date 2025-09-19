@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react"
 import { Loader2, Send, ArrowLeft, ChevronDown } from "lucide-react"
 import { useAuthStore } from "~stores/authStore"
 import { selectorsBasedOnSite } from "~utils/selectorsBasedOnSite"
-import { agentAPI, type CreateJobForUserBody } from "~services/agentAPI"
+import { agentAPI, type CreateJobForUserBody } from "../services/agentAPI"
 import { getMetaData } from "~helpers/sendMetaData/metaData.helper"
 import { generateUUID } from "~helpers/uuid.helper"
+
 
 type Props = { userId: string; onBack: () => void }
 
@@ -21,6 +22,9 @@ const JobScraperPanel: React.FC<Props> = ({ userId, onBack }) => {
   const [companyUrl, setCompanyUrl] = useState<string | undefined>(undefined)
   const [location, setLocation] = useState<string | undefined>(undefined)
   const [jobLink, setJobLink] = useState(window.location.href)
+  const [h1bStatus, setH1bStatus] = useState<"checking" | "yes" | "no" | "error">("checking")
+  const [score, setScore] = useState<any>(null); // Assuming the score is an object or number
+  const [computingScore, setComputingScore] = useState(false);
 
   const [priority, setPriority] = useState<"High" | "Medium" | "Low">("Medium")
   const [openPriority, setOpenPriority] = useState(false)
@@ -73,6 +77,42 @@ const JobScraperPanel: React.FC<Props> = ({ userId, onBack }) => {
     detect()
   }, [])
 
+  useEffect(() => {
+    const fetchH1BStatus = async () => {
+      if (companyName) {
+        setH1bStatus("checking");
+        try {
+          const result = await agentAPI.checkH1bSponsorship(companyName);
+          setH1bStatus(result.data.isH1bSponsor ? "yes" : "no");
+        } catch (error) {
+          console.error("Error fetching H1B status:", error);
+          setMessage(
+            `Error checking H1B sponsorship: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+          setPhase("error");
+        }
+      }
+    };
+    fetchH1BStatus();
+  }, [companyName]);
+
+  const handleComputeScore = async () => {
+    if (!jobDescription) {
+      setMessage("Please enter a job description to compute the score.");
+      return;
+    }
+    setComputingScore(true);
+    setMessage("Computing job score...");
+    try {
+      const result = await agentAPI.computeJobScore(jobDescription);
+      setScore(result);
+      setMessage("Job score computed successfully.");
+    } catch (error: any) {
+      setMessage(`Error computing job score: ${error?.message || 'Unknown error'}`);
+      setPhase("error");
+    }
+    setComputingScore(false);
+  };
   const canSend =
     isAuthenticated &&
     jobTitle.trim().length > 0 &&
@@ -114,6 +154,22 @@ const JobScraperPanel: React.FC<Props> = ({ userId, onBack }) => {
 
   return (
     <div className="w-full">
+      
+      {h1bStatus === "checking" && ( <span>H1B Status: Searching... <Loader2 className="inline-block h-4 w-4 animate-spin" /></span> )}
+      
+      {h1bStatus !== "checking" && ( // Only show the status if not checking
+        <div className="text-sm mb-2">
+          H1B Status: {
+            h1bStatus === "yes" ? (
+              <span className="text-green-600 font-semibold">Yes</span>
+            ) : h1bStatus === "no" ? (
+              <span className="text-red-600 font-semibold">No</span>
+            ) : (
+              <span className="text-yellow-600 font-semibold">Error</span>
+            )
+          }
+        </div>
+      )}
       <div className="flex items-center justify-between mb-3">
         <button onClick={onBack} className="inline-flex items-center gap-1 text-xs text-sky-700 hover:underline">
           <ArrowLeft className="h-4 w-4" /> Back to users
@@ -125,6 +181,15 @@ const JobScraperPanel: React.FC<Props> = ({ userId, onBack }) => {
 
       <div className={`text-xs mb-3 ${phase === "error" ? "text-rose-600" : "text-gray-600"}`}>
         {message}
+      </div>
+
+      {/* Job Score Display */}
+      <div className="text-sm mb-2">
+        {computingScore ? (
+          <span>Computing... <Loader2 className="inline-block h-4 w-4 animate-spin" /></span>
+        ) : score ? (
+          <span>Job Score: {JSON.stringify(score)}</span> // You can format this better
+        ) : null}
       </div>
 
       {/* Fields */}
@@ -152,11 +217,19 @@ const JobScraperPanel: React.FC<Props> = ({ userId, onBack }) => {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
-            <input
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-            />
+            {companyName ? (
+              <input
+                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
+            ) : (
+              <input
+                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Enter Company Name Manually"
+              />
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
@@ -244,6 +317,12 @@ const JobScraperPanel: React.FC<Props> = ({ userId, onBack }) => {
           </select>
         </div>
       </div>
+
+      {/* <button
+          onClick={handleComputeScore}
+          disabled={computingScore || !jobDescription}
+          className="w-full mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+      >Compute Score</button> */}
 
       <button
         onClick={sendToUser}
